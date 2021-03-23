@@ -11,7 +11,7 @@
 ## 1 - Blocking:
 Simple .groupby('brand').
 
-##  - Tokenization and Embedding:
+## 2 - Tokenization and Embedding:
 First thing to do is apply a simple Tokenizer and stopWordsRemover to the 'title' column, 
 by splitting the sentence into words and removing noisy words (i.e 'Amazon.com : ').
 After that a good approach in litterature seems to be applying TF-IDF measure to the tokens.
@@ -19,3 +19,4 @@ What it does, is basically mapping each set of tokens to a feature vector where 
 mapped to its relative importance in the dataframe. Important: dataframe is one single group. 
 (i.e less frequent words are more important. Moreover the feature is normalized with the number of tokens for each set).
 TO DO: think how to apply the tokenization and embedding to the other columns.
+
