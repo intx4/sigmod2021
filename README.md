@@ -1,5 +1,22 @@
 # Entity resolution with state-of-the-art SVM Classifier using PySpark.ml
 
+## How to COMMIT after working on the NOTEBOOK
+GIT has some issues with jupyter when it comes to cell ouputs.
+Before commiting your code do the following:
+
+### Pycharm
+Go to the **jupyter** icon at the bottom left of your screen and click on the URLs with
+your access token passed as a GET argument that should open the notebook in your browser
+
+### Then
+1. Open the notebook that you have edited 
+2. Click on **CELL**
+3. Click on **ALL OUTPUT**
+4. Click on **CLEAR**
+5. Repeat for all notebooks
+
+You can now commit your code :)
+
 ## 0 - Data cleaning:
 * Col 'brand': for null values, take keyword from title (i.e 'HP','Asus')
 * Col 'cpu...': collapse cpu columns in brand (i.e 'Intel' or 'AMD'...)
