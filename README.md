@@ -18,14 +18,7 @@ your access token passed as a GET argument that should open the notebook in your
 You can now commit your code :)
 
 ## 0 - Data cleaning:
-* Col 'brand': for null values, take keyword from title (i.e 'HP','Asus')
-* Col 'cpu...': collapse cpu columns in brand (i.e 'Intel' or 'AMD'...)
-* Col 'ram...': keep capacity
-* Col 'hdd and ssd': keep capacity. Collapse into one.
-* Col 'weight': keep it but use conversion in kg
-* Col 'dimensions': same as weight
-
-## 1 - Blocking:
+see blocking tentative part 0 
 Simple .groupby('brand').
 
 ## 2 - Tokenization and Embedding:
