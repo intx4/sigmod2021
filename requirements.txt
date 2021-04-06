@@ -2,3 +2,4 @@ py4j==0.10.9
 pyspark==3.1.1
 tensorflow_hub
 graphFrames
+spark-stratifier
