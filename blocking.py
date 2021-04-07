@@ -102,7 +102,8 @@ def top_keywords(vocab, n=3):
 
 
 def generate_blocking_keys(df, token_cols, min_freq=1):
-    """Pipeline:
+    """
+    Pipeline:
     1 - CountVectorizer -> TF
     2 - IDF
     3 - LDA
