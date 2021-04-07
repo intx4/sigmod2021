@@ -23,6 +23,10 @@ def merge_columns(df, column_names, output):
     merge ram columns and cpu columns into one for ram and one for cpu
     """
     df = df.withColumn(output, f.concat_ws(" ", *column_names))
+    # If empty string, manually reset to None
+    df = df.withColumn(
+        output, f.when(f.col(output) == "", None).otherwise(f.col(output))
+    )
     return df.drop(*column_names)
 
 
@@ -100,14 +104,13 @@ def read_notebooks(path="./X2.csv"):
 
 def read_matching_labels(path="./Y2.csv"):
     labels = spark.read.csv(path, header=True)
+    labels = labels.withColumn("label", labels.label.cast(t.IntegerType()))
     labels = labels.withColumnRenamed("left_instance_id", "lid").withColumnRenamed(
         "right_instance_id", "rid"
     )
     # Expand with reverse relations as well
-    labels = labels.union(
+    return labels.union(
         labels.select(
             f.col("lid").alias("rid"), f.col("rid").alias("lid"), labels.label
         )
-    )
-    # Keep only properly sorted relations
-    return labels.filter((labels.lid < labels.rid) & (labels.label == 1)).drop("label")
+    ).filter(labels.lid != labels.rid)
