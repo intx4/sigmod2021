@@ -18,20 +18,41 @@ def lowercase(df):
     return df
 
 
+def normalize_nulls(df, column):
+    # If empty string, manually reset to None
+    return df.withColumn(
+        column, f.when(f.col(column) == "", None).otherwise(f.col(column))
+    )
+
+
 def merge_columns(df, column_names, output):
     """
     merge ram columns and cpu columns into one for ram and one for cpu
     """
     df = df.withColumn(output, f.concat_ws(" ", *column_names))
-    # If empty string, manually reset to None
-    df = df.withColumn(
-        output, f.when(f.col(output) == "", None).otherwise(f.col(output))
-    )
+    df = normalize_nulls(df, output)
     return df.drop(*column_names)
 
 
+def extract_number(df, column, pattern):
+    num = f.regexp_extract(column, pattern, 1).cast(t.DoubleType())
+    return df.withColumn(column, f.when(num != 0.0, num).otherwise(None))
+
+
 def clean_notebook_features(df):
-    df = df.drop("ssd_capacity", "dimensions", "ram_frequency")
+    # Remove Amazon.com : prefix from title
+    df = df.withColumn("title", f.regexp_replace("title", "amazon.com\s?:\s?", ""))
+
+    df = df.withColumn(
+        "hdd_capacity", f.regexp_extract("hdd_capacity", "(\d+\s?\wb)", 1)
+    )
+    cap = f.regexp_extract("hdd_capacity", "(\d+)", 1).cast(t.DoubleType())
+    df = df.withColumn(
+        "hdd_capacity", f.when(df.hdd_capacity.contains("t"), cap * 1000).otherwise(cap)
+    )
+
+    df = extract_number(df, "cpu_frequency", "(\d+(\.\d+)?)\s?ghz")
+    df = extract_number(df, "ram_capacity", "(\d+)\s?gb")
     # Extract brand or infer from title
     df = df.withColumn("brand", f.regexp_extract("brand", "^(\w+)", 0))
     computer_brands = [
@@ -49,7 +70,7 @@ def clean_notebook_features(df):
     df = df.withColumn(
         "brand",
         f.when(
-            f.regexp_extract("title", computer_brands_pattern, 0) != "",
+            df.brand.isNull(),
             f.regexp_extract("title", computer_brands_pattern, 0),
         ).otherwise(df.brand),
     )
@@ -62,8 +83,7 @@ def clean_notebook_features(df):
     df = df.withColumn(
         "cpu_model",
         f.when(
-            (f.regexp_extract("cpu_brand", "(intel|amd)", 0) != "")
-            & f.isnull(df.cpu_model),
+            f.isnull(df.cpu_model),
             f.regexp_extract("cpu_brand", "(i\d|pentium|celeron|a\d)", 0),
         ).otherwise(df.cpu_model),
     )
@@ -74,20 +94,18 @@ def clean_notebook_features(df):
             f.regexp_extract("cpu_brand", cpu_pattern, 1),
         ).otherwise(f.regexp_extract("title", cpu_pattern, 0)),
     )
-    # convert weight from pounds to kilos
+    # Extract weight and convert from kilos to pounds
     df = df.withColumn(
         "weight",
         f.when(
             df.weight.contains("pounds") | df.weight.contains("lbs"),
-            (f.regexp_extract("weight", "(\d+.?\d)", 0).cast(t.DoubleType())),
+            f.regexp_extract("weight", "(\d+.?\d)", 0).cast(t.DoubleType()),
         ).otherwise(
-            f.round(
-                f.regexp_extract("weight", "(\d+.?\d)", 0).cast(t.DoubleType())
-                * 2.20462,
-                1,
-            )
+            f.regexp_extract("weight", "(\d+.?\d)", 0).cast(t.DoubleType()) * 2.20462
         ),
     )
+    df = normalize_nulls(df, "cpu_model")
+    df = normalize_nulls(df, "cpu_brand")
     return df
 
 
@@ -95,22 +113,21 @@ def read_notebooks(path="./X2.csv"):
     df = spark.read.csv(path, header=True)
     df = lowercase(df)
     df = clean_notebook_features(df)
-    df = merge_columns(
-        df, ["cpu_brand", "cpu_model", "cpu_frequency", "cpu_type"], "cpu"
-    )
-    df = merge_columns(df, ["ram_capacity", "ram_type"], "ram")
-    return df
+    # df = merge_columns(
+    #    df, ["cpu_brand", "cpu_model", "cpu_frequency", "cpu_type"], "cpu"
+    # )
+    # df = merge_columns(df, ["ram_frequency", "ram_capacity", "ram_type"], "ram")
+    df = df.drop("ssd_capacity", "ram_frequency", "dimensions")
+    return df.withColumnRenamed("instance_id", "id")
 
 
 def read_matching_labels(path="./Y2.csv"):
     labels = spark.read.csv(path, header=True)
     labels = labels.withColumn("label", labels.label.cast(t.IntegerType()))
-    labels = labels.withColumnRenamed("left_instance_id", "lid").withColumnRenamed(
-        "right_instance_id", "rid"
+    labels = labels.withColumnRenamed("left_instance_id", "src").withColumnRenamed(
+        "right_instance_id", "dst"
     )
     # Expand with reverse relations as well
     return labels.union(
-        labels.select(
-            f.col("lid").alias("rid"), f.col("rid").alias("lid"), labels.label
-        )
-    ).filter(labels.lid != labels.rid)
+        labels.select(f.col("src").alias("dst"), f.col("dst").alias("src"), "label")
+    ).filter(labels.src != labels.dst)

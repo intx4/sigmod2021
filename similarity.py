@@ -100,6 +100,5 @@ def compute_similarities(graph, columns):
         "overall_sim", reduce(add, [f.col(c) for c in metrics]) / len(metrics)
     )
     metrics.append("overall_sim")
-
     assembler = VectorAssembler(inputCols=metrics, outputCol="features")
     return assembler.transform(df)

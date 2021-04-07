@@ -187,32 +187,30 @@ def with_top_tokens(df, token_cols, min_freq=1):
 def blocking_keys(df, columns):
     df = tokenize(df, columns)
     token_cols = [c + "_tokens" for c in columns]
-    df = generate_blocking_keys(df, token_cols)
-    return df
-    # top_token_cols = [c + "_tokens_top" for c in columns]
-    # return df.withColumn("blocking_keys", f.array_distinct(f.concat(*top_token_cols)))
+    df = with_top_tokens(df, token_cols)
+    top_token_cols = [c + "_tokens_top" for c in columns]
+    return df.withColumn("blocking_keys", f.array_distinct(f.concat(*top_token_cols)))
 
 
 def candidate_pairs(df):
     LARGEST_BLOCK = 200
-    df = df.withColumnRenamed("instance_id", "uid")
     keep_pairs = (
-        df.select(f.explode("blocking_keys").alias("blocking_key"), "uid")
+        df.select(f.explode("blocking_keys").alias("blocking_key"), "id")
         .groupBy("blocking_key")
         .agg(
-            f.count("uid").alias("block_size"),
-            f.collect_set("uid").alias("uid"),
+            f.count("id").alias("block_size"),
+            f.collect_set("id").alias("id"),
         )
         .filter(f.col("block_size").between(2, LARGEST_BLOCK))
-        .select("blocking_key", f.explode("uid").alias("uid"))
+        .select("blocking_key", f.explode("id").alias("id"))
     )
 
-    left = keep_pairs.withColumnRenamed("uid", "lid")
-    right = keep_pairs.withColumnRenamed("uid", "rid")
+    left = keep_pairs.withColumnRenamed("id", "src")
+    right = keep_pairs.withColumnRenamed("id", "dst")
 
     return (
         left.join(right, ["blocking_key"], "inner")
-        .filter(f.col("lid") < f.col("rid"))
-        .select("lid", "rid")
+        .filter(f.col("src") < f.col("dst"))
+        .select("src", "dst")
         .distinct()
     )

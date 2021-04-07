@@ -3,3 +3,6 @@
 venv/
 __pycache__/
 .ipynb_checkpoints/
+dataset.parquet/
+dataset.zip
+model/
