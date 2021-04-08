@@ -76,6 +76,12 @@ def tokenize(df, string_cols):
 
         output = tokenizer.transform(output)
         output = remover.transform(output).drop(c + "_rawtokens")
+        #if c == 'title':
+         #   trimmer = f.udf(lambda x: x[:4], t.ArrayType(t.StringType()))
+          #  output = output.withColumn('title_tokens', trimmer(f.col('title_tokens')))
+           # parser = f.udf(lambda x: ' '.join(x), t.StringType())
+            #output = output.withColumn('title', parser(f.col('title_tokens')))
+        
         output = output.withColumn(
             c + "_tokens", f.array_distinct(filter_alnum(f.col(c + "_tokens")))
         )
@@ -101,7 +107,7 @@ def top_keywords(vocab, n=3):
     return _
 
 
-def generate_blocking_keys(df, token_cols, min_freq=1):
+def generate_blocking_keys(df, token_cols, min_freq=2):
     """
     Pipeline:
     1 - CountVectorizer -> TF
@@ -110,7 +116,7 @@ def generate_blocking_keys(df, token_cols, min_freq=1):
     """
     # merge all tokens in one column
     df = df.withColumn("tokens", f.array_distinct(f.concat(*token_cols)))
-    df = df.drop(*token_cols)
+    #df = df.drop(*token_cols)
 
     # Vectorize the tokens and find their inverse frequency
     cv = CountVectorizer(inputCol="tokens", outputCol="raw_features").fit(df)
@@ -125,7 +131,7 @@ def generate_blocking_keys(df, token_cols, min_freq=1):
     df = normalizer.transform(df).drop("features", "raw_features")
 
     k = df.select("brand").distinct().count()
-    lda = LDA(k=k, maxIter=1000, featuresCol="tfidf").fit(df)
+    lda = LDA(k=k, maxIter=5000, featuresCol="tfidf").fit(df)
     vocab = cv.vocabulary
 
     # returns words for each topic term
@@ -145,17 +151,31 @@ def generate_blocking_keys(df, token_cols, min_freq=1):
         topicW = r["topic_words"]
         for w in topicW:
             list_of_topics.append(w)
-
-    # returns list of 3 'hashtags' i.e keywords for topic
+    h = 2
+    # returns list of h 'hashtags' i.e keywords for topic
     # from tokens: title, brand, cpu_brand
+    
     @f.udf(returnType=t.ArrayType(t.StringType()))
     def get_key(words):
         l = [w for w in words if w in list_of_topics]
         l = list(set(l))
         l.sort()
-        return l[:3]
+        return l[:h]
 
     df = df.withColumn("blocking_keys", get_key(f.col("tokens")))
+    
+    #TFIDF for each column
+    for c in token_cols:
+        cv = CountVectorizer(inputCol=c, outputCol=c+"_raw_features").fit(df)
+        df = cv.transform(df)
+    
+        idf = IDF(inputCol=c+"_raw_features", outputCol=c+"_features", minDocFreq=min_freq).fit(
+            df
+        )
+        df = idf.transform(df)
+    
+        normalizer = Normalizer(p=2.0, inputCol=c+"_features", outputCol=c+"_tfidf")
+        df = normalizer.transform(df).drop(c+"_features", c+"_raw_features")
     return df
 
 
@@ -187,10 +207,14 @@ def with_top_tokens(df, token_cols, min_freq=1):
 def blocking_keys(df, columns):
     df = tokenize(df, columns)
     token_cols = [c + "_tokens" for c in columns]
+    """
     df = with_top_tokens(df, token_cols)
     top_token_cols = [c + "_tokens_top" for c in columns]
     return df.withColumn("blocking_keys", f.array_distinct(f.concat(*top_token_cols)))
-
+    """
+    df = generate_blocking_keys(df, token_cols)
+    print(df.columns)
+    return df
 
 def candidate_pairs(df):
     LARGEST_BLOCK = 200

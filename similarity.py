@@ -2,7 +2,7 @@ import tensorflow_hub as hub
 import numpy as np
 
 from functools import reduce
-from operator import add
+from operator import add, abs, sub
 
 from pyspark.sql import functions as f
 from pyspark.sql import types as t
@@ -47,9 +47,18 @@ def dot(x, y):
 
 
 def vector_sim(c1, c2):
+    #Dot product
     return dot(f.col(c1), f.col(c2))
-
-
+    """
+    #Abs elementwise dinstance
+    @f.udf(returnType=t.ArrayType(t.DoubleType()))
+    def v_sim(x,y):
+        l = []
+        for a,b in zip(x,y):
+            l.append(abs(sub(a, b)))
+        return l
+    return v_sim(f.col(c1), f.col(c2))
+    """
 def levenshtein_sim(c1, c2):
     output = f.when(f.col(c1).isNull() | f.col(c2).isNull(), 0).otherwise(
         1 - f.levenshtein(c1, c2) / f.greatest(f.length(c1), f.length(c2))
@@ -91,14 +100,32 @@ def compute_similarities(graph, columns):
         "double": scalar_sim,
     }
     df = graph.triplets
+    metrics = []
     for c in columns:
         sim = sim_methods[type_dict[c]]
         df = df.withColumn(c + "_sim", sim("src." + c, "dst." + c))
+        """
+        if type_dict[c] == "vector":
+            arr_size = 512
+            for x in range(0,arr_size):
+                df = df.withColumn(c+"_sim"+str(x),f.expr(c+"_sim"+'[' + str(x) + ']'))
+                metrics.append(c+"_sim"+str(x))
+            df = df.drop(c + "_sim")
+        else:
+        """
+        metrics.append(c+"_sim")
 
-    metrics = [c + "_sim" for c in columns]
     df = df.withColumn(
         "overall_sim", reduce(add, [f.col(c) for c in metrics]) / len(metrics)
     )
     metrics.append("overall_sim")
-    assembler = VectorAssembler(inputCols=metrics, outputCol="features")
-    return assembler.transform(df)
+    metrics_exp = []
+    metrics_sq = []
+    for c in metrics[:-1]:
+        df = df.withColumn(c+'_exp', f.exp(c)).withColumn(c+'_sq', f.pow(c, 2.0))
+        metrics_exp.append(c+"_exp")
+        metrics_sq.append(c+"_sq")
+    to_assemble = metrics[:-1] + metrics_sq + metrics_exp
+    assembler = VectorAssembler(inputCols=to_assemble, outputCol="features")
+    df = assembler.transform(df)
+    return df
