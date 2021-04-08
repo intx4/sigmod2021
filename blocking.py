@@ -212,8 +212,11 @@ def blocking_keys(df, columns):
     top_token_cols = [c + "_tokens_top" for c in columns]
     return df.withColumn("blocking_keys", f.array_distinct(f.concat(*top_token_cols)))
     """
-    df = generate_blocking_keys(df, token_cols)
-    print(df.columns)
+    if "brand" in columns and "name" in columns:
+        #is X4
+        pass
+    else:
+        df = generate_blocking_keys(df, token_cols)
     return df
 
 def candidate_pairs(df):

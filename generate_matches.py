@@ -8,8 +8,6 @@ from datasets import *
 from blocking import *
 from similarity import with_encodings, compute_similarities
 from graphframes import GraphFrame
-from training import compute_weights, train_model
-
 
 instance_file = sys.argv[1]
 label_file = instance_file.replace("X", "Y")
