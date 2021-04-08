@@ -1,5 +1,7 @@
+import sys
 from pyspark.sql import functions as f
 from pyspark.sql import types as t
+import tensorflow_hub as hub
 
 from db import spark
 
@@ -106,22 +108,81 @@ def clean_notebook_features(df):
     )
     df = normalize_nulls(df, "cpu_model")
     df = normalize_nulls(df, "cpu_brand")
+    df = df.drop("ssd_capacity", "ram_frequency", "dimensions")
     return df
 
 
-def read_notebooks(path="./X2.csv"):
+class NotebookDataset:
+    def __init__(self, df):
+        self.df = clean_notebook_features(df)
+        self.blocking_columns = ["title", "brand", "cpu_type", "ram_type"]
+        self.encoding_columns = ["title", "cpu_type", "ram_type"]
+        self.sim_columns = [
+            "title",
+            "brand",
+            "cpu_brand",
+            "cpu_model",
+            "cpu_type",
+            "cpu_frequency",
+            "ram_capacity",
+            "hdd_capacity",
+            "weight",
+            "title_tokens",
+            "brand_tokens",
+            "cpu_type_tokens",
+            "ram_type_tokens",
+            "title_tokens_tfidf",
+            "brand_tokens_tfidf",
+            "cpu_type_tokens_tfidf",
+            "ram_type_tokens_tfidf",
+            "title_encoding",
+            "cpu_type_encoding",
+            "ram_type_encoding",
+        ]
+        self.name = "notebooks"
+
+
+def clean_product_features(df):
+    df = df.withColumn("price", df.price.cast(t.DoubleType()))
+    size = f.regexp_extract("size", "(\d+)", 1).cast(t.DoubleType())
+    df = df.withColumn(
+        "size", f.when(df.size.contains("tb"), size * 1000).otherwise(size)
+    )
+    return df
+
+
+class ProductDataset:
+    def __init__(self, df):
+        self.df = clean_product_features(df)
+        self.blocking_columns = ["name", "brand"]
+        self.encoding_columns = ["name"]
+        self.sim_columns = [
+            "name",
+            "name_tokens",
+            "name_tokens_tfidf",
+            "name_encoding",
+            "brand",
+            "brand_tokens",
+            "brand_tokens_tfidf",
+            "price",
+            "size",
+        ]
+        self.name = "products"
+
+
+def read_dataset(path):
     df = spark.read.csv(path, header=True)
     df = lowercase(df)
-    df = clean_notebook_features(df)
-    # df = merge_columns(
-    #    df, ["cpu_brand", "cpu_model", "cpu_frequency", "cpu_type"], "cpu"
-    # )
-    # df = merge_columns(df, ["ram_frequency", "ram_capacity", "ram_type"], "ram")
-    df = df.drop("ssd_capacity", "ram_frequency", "dimensions")
-    return df.withColumnRenamed("instance_id", "id")
+    df = df.withColumnRenamed("instance_id", "id")
+    if "display_size" in df.columns:
+        # We don't care about this dataset, so just die
+        sys.exit(0)
+    if "ram_type" in df.columns:
+        return NotebookDataset(df)
+    return ProductDataset(df)
 
 
-def read_matching_labels(path="./Y2.csv"):
+def read_matching_labels(path):
     labels = spark.read.csv(path, header=True)
     labels = labels.withColumn("label", labels.label.cast(t.IntegerType()))
     labels = labels.withColumnRenamed("left_instance_id", "src").withColumnRenamed(

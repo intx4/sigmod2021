@@ -19,7 +19,7 @@ MODEL = None
 def get_model_magic():
     global MODEL
     if MODEL is None:
-        MODEL = hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
+        MODEL = hub.load("https://tfhub.dev/google/universal-sentence-encoder-large/5")
     return MODEL
 
 
