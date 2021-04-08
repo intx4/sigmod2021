@@ -107,7 +107,7 @@ def top_keywords(vocab, n=3):
     return _
 
 
-def generate_blocking_keys(df, token_cols, min_freq=2):
+def generate_blocking_keys_first_two_data_samples(df, token_cols, min_freq=2):
     """
     Pipeline:
     1 - CountVectorizer -> TF
@@ -203,7 +203,6 @@ def with_top_tokens(df, token_cols, min_freq=1):
         )
     return df
 
-
 def blocking_keys(df, columns):
     df = tokenize(df, columns)
     token_cols = [c + "_tokens" for c in columns]
@@ -213,10 +212,9 @@ def blocking_keys(df, columns):
     return df.withColumn("blocking_keys", f.array_distinct(f.concat(*top_token_cols)))
     """
     if "brand" in columns and "name" in columns:
-        #is X4
-        pass
+        df = df.withColumn('blocking_keys', f.array(df.brand, df.size.cast(t.StringType())))
     else:
-        df = generate_blocking_keys(df, token_cols)
+        df = generate_blocking_keys_first_two_data_samples(df, token_cols)
     return df
 
 def candidate_pairs(df):
