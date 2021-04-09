@@ -1,7 +1,7 @@
 import sys
 from os import path
 
-from pyspark.sql import functions as f
+
 from pyspark.ml.classification import LinearSVCModel
 
 from datasets import *

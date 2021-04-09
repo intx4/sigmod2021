@@ -179,7 +179,7 @@ def generate_blocking_keys_first_two_data_samples(df, token_cols, min_freq=2):
     return df
 
 
-def with_top_tokens(df, token_cols, min_freq=1):
+def with_top_tokens(df, token_cols, min_freq=2):
     for pre in token_cols:
         cv = CountVectorizer(
             inputCol=pre, outputCol=pre + "_raw_features", minDF=min_freq
@@ -217,7 +217,7 @@ def blocking_keys(df, columns):
             cv = CountVectorizer(inputCol=c, outputCol=c + "_raw_features").fit(df)
             df = cv.transform(df)
     
-            idf = IDF(inputCol=c + "_raw_features", outputCol=c + "_features", minDocFreq=min_freq).fit(
+            idf = IDF(inputCol=c + "_raw_features", outputCol=c + "_features", minDocFreq=2).fit(
                 df
             )
             df = idf.transform(df)

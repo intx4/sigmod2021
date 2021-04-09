@@ -47,18 +47,20 @@ def dot(x, y):
 
 
 def vector_sim(c1, c2):
-    #Dot product
-    return dot(f.col(c1), f.col(c2))
-    """
-    #Abs elementwise dinstance
-    @f.udf(returnType=t.ArrayType(t.DoubleType()))
-    def v_sim(x,y):
-        l = []
-        for a,b in zip(x,y):
-            l.append(abs(sub(a, b)))
-        return l
+    
+    #Dot product len safe
+    @f.udf(returnType=t.DoubleType())
+    def v_sim(x, y):
+        if len(x) < len(y):
+            size = len(x)-1
+        else:
+            size = len(y)-1
+            x = x.toArray()[:size]
+            y = y.toArray()[:size]
+        return np.dot(x, y)
+    
     return v_sim(f.col(c1), f.col(c2))
-    """
+
 def levenshtein_sim(c1, c2):
     output = f.when(f.col(c1).isNull() | f.col(c2).isNull(), 0).otherwise(
         1 - f.levenshtein(c1, c2) / f.greatest(f.length(c1), f.length(c2))
