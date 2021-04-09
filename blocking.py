@@ -213,6 +213,17 @@ def blocking_keys(df, columns):
     """
     if "brand" in columns and "name" in columns:
         df = df.withColumn('blocking_keys', f.array(df.brand, df.size.cast(t.StringType())))
+        for c in token_cols:
+            cv = CountVectorizer(inputCol=c, outputCol=c + "_raw_features").fit(df)
+            df = cv.transform(df)
+    
+            idf = IDF(inputCol=c + "_raw_features", outputCol=c + "_features", minDocFreq=min_freq).fit(
+                df
+            )
+            df = idf.transform(df)
+    
+            normalizer = Normalizer(p=2.0, inputCol=c + "_features", outputCol=c + "_tfidf")
+            df = normalizer.transform(df).drop(c + "_features", c + "_raw_features")
     else:
         df = generate_blocking_keys_first_two_data_samples(df, token_cols)
     return df

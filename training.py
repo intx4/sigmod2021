@@ -12,7 +12,7 @@ def compute_weights(df, column="label"):
 
 def train_model(df, max_iter=100):
     model = LinearSVC(
-        featuresCol="features", labelCol="label", weightCol="weights", maxIter=100
+        featuresCol="features", labelCol="label", weightCol="weights", maxIter=1000
     )
     param_grid = (
         ParamGridBuilder().addGrid(model.regParam, [0.5, 0.4, 0.3, 0.2, 0.1]).build()
@@ -21,6 +21,6 @@ def train_model(df, max_iter=100):
         estimator=model,
         estimatorParamMaps=param_grid,
         evaluator=BinaryClassificationEvaluator(),
-        numFolds=3,
+        numFolds=4,
     )
     return cvs.fit(df)
