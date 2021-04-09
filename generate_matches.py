@@ -1,7 +1,6 @@
 import sys
 from os import path
 
-
 from pyspark.ml.classification import LinearSVCModel
 
 from datasets import *

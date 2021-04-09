@@ -47,19 +47,8 @@ def dot(x, y):
 
 
 def vector_sim(c1, c2):
-    
-    #Dot product len safe
-    @f.udf(returnType=t.DoubleType())
-    def v_sim(x, y):
-        if len(x) < len(y):
-            size = len(x)-1
-        else:
-            size = len(y)-1
-            x = x.toArray()[:size]
-            y = y.toArray()[:size]
-        return np.dot(x, y)
-    
-    return v_sim(f.col(c1), f.col(c2))
+    return dot(f.col(c1), f.col(c2))
+
 
 def levenshtein_sim(c1, c2):
     output = f.when(f.col(c1).isNull() | f.col(c2).isNull(), 0).otherwise(
@@ -106,28 +95,16 @@ def compute_similarities(graph, columns):
     for c in columns:
         sim = sim_methods[type_dict[c]]
         df = df.withColumn(c + "_sim", sim("src." + c, "dst." + c))
-        """
-        if type_dict[c] == "vector":
-            arr_size = 512
-            for x in range(0,arr_size):
-                df = df.withColumn(c+"_sim"+str(x),f.expr(c+"_sim"+'[' + str(x) + ']'))
-                metrics.append(c+"_sim"+str(x))
-            df = df.drop(c + "_sim")
-        else:
-        """
-        metrics.append(c+"_sim")
+        metrics.append(c + "_sim")
 
     df = df.withColumn(
         "overall_sim", reduce(add, [f.col(c) for c in metrics]) / len(metrics)
     )
     metrics.append("overall_sim")
-    metrics_exp = []
-    metrics_sq = []
+    to_assemble = metrics
     for c in metrics[:-1]:
-        df = df.withColumn(c+'_exp', f.exp(c)).withColumn(c+'_sq', f.pow(c, 2.0))
-        metrics_exp.append(c+"_exp")
-        metrics_sq.append(c+"_sq")
-    to_assemble = metrics[:-1] + metrics_sq + metrics_exp
+        df = df.withColumn(c + "_exp", f.exp(c))
+        df = df.withColumn(c + "_sq", f.pow(c, 2.0))
+        to_assemble += [c + "_exp", c + "_sq"]
     assembler = VectorAssembler(inputCols=to_assemble, outputCol="features")
-    df = assembler.transform(df)
-    return df
+    return assembler.transform(df)

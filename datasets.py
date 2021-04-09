@@ -146,13 +146,20 @@ def clean_product_features(df):
     for c in df.columns:
         df = df.withColumn(c, f.lower(c))
     df = df.withColumn("price", df.price.cast(t.DoubleType()))
-    df = df.withColumn('size', f.when(df.size.isNull(), f.regexp_extract(df.name,'(\d+ ?(gb|tb|go|to))', 1)).otherwise(df.size))
+    df = df.withColumn(
+        "size",
+        f.when(
+            df.size.isNull(), f.regexp_extract(df.name, "(\d+ ?(gb|tb|go|to))", 1)
+        ).otherwise(df.size),
+    )
     size = f.regexp_extract("size", "(\d+)", 1).cast(t.DoubleType())
     df = df.withColumn(
-        "size", f.when((df.size.contains("tb") | df.size.contains('to')), size * 1000).otherwise(size)
+        "size",
+        f.when(
+            (df.size.contains("tb") | df.size.contains("to")), size * 1000
+        ).otherwise(size),
     )
-    df = df.withColumn('name', f.regexp_replace('name', '\d+ ?(gb|tb|go|tb)',''))
-    df.show()
+    df = df.withColumn("name", f.regexp_replace("name", "\d+ ?(gb|tb|go|tb)", ""))
     return df
 
 
