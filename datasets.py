@@ -166,7 +166,7 @@ def clean_product_features(df):
 class ProductDataset:
     def __init__(self, df):
         self.df = clean_product_features(df)
-        self.blocking_columns = ["name", "brand"]
+        self.blocking_columns = ["name","brand"]
         self.encoding_columns = ["name"]
         self.sim_columns = [
             "name",

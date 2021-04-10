@@ -14,23 +14,29 @@ from pyspark.ml.feature import VectorAssembler
 
 """Use universal sentence encoder from tensorflow_hub"""
 MODEL = None
+is_prod = False
 
 
 def get_model_magic():
     global MODEL
     if MODEL is None:
-        MODEL = hub.load("https://tfhub.dev/google/universal-sentence-encoder-large/5")
+        if is_prod:
+            MODEL = hub.load("https://tfhub.dev/google/universal-sentence-encoder-multilingual-large/3")
+        else:
+            MODEL = hub.load("https://tfhub.dev/google/universal-sentence-encoder-large/5")
     return MODEL
 
 
 @f.udf(returnType=VectorUDT())
-def encode_sentence(x):
+def encode_sentence(x, is_prod=False):
     model = get_model_magic()
     emb = model([x]).numpy()[0]
     return Vectors.dense(emb)
 
 
 def with_encodings(df, columns):
+    if "name" in columns:
+        is_prod = True
     for c in columns:
         df = df.withColumn(
             c + "_encoding", encode_sentence(f.coalesce(f.col(c), f.lit("")))
