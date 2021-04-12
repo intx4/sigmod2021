@@ -1,7 +1,7 @@
 import sys
 from os import path
 
-from pyspark.ml.classification import LinearSVCModel, GBTClassifier, LogisticRegression
+from pyspark.ml.classification import LinearSVCModel, GBTClassificationModel, LogisticRegressionModel
 from pyspark.ml.linalg import Vectors, VectorUDT
 from datasets import *
 from blocking import *
@@ -27,8 +27,9 @@ df = df.select(
 )
 
 model_1 = LinearSVCModel.load("model-" + dataset.name + "_1")
-model_2 = GBTClassifier.load("model-" + dataset.name + "_2")
-model_comb = LogisticRegression.load("model-" + dataset.name + "_comb")
+model_comb = LogisticRegressionModel.load("model-" + dataset.name + "_comb")
+model_2 = GBTClassificationModel.load("model-" + dataset.name + "_2")
+
 
 output = model_1.transform(df).drop('rawPrediction').drop('probability')
 output = model_2.transform(output).drop('rawPrediction').drop('probability')
