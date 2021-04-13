@@ -5,7 +5,7 @@ from datasets import *
 from blocking import *
 from similarity import with_encodings, compute_similarities
 from graphframes import GraphFrame
-from training import compute_weights, train_model
+
 
 
 instance_file = sys.argv[1] if len(sys.argv) > 1 else "./data/X4.csv"
