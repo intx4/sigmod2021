@@ -1,4 +1,4 @@
-# Entity resolution with state-of-the-art SVM Classifier using PySpark.ml
+# Entity resolution with (tentative of) state-of-the-art SVM Classifier using PySpark.ml
 This work was developed in the context of ACM Sigmod Programming Contest 2021. Topic: Entity resolution on different datasets.
 
 ## Context
@@ -19,8 +19,7 @@ were proprietary, so we could not investigate further on that.
 Our approach was comprised the following steps:
 1. Source Normalization
 2. Feature extraction & Blocking
-3. Candidate matches generation
-4. Match scoring
+3. Match scoring
 
 Which is the main method used today for entity resolution regardless of the final method used (ML based or not).
 We based our approach on this [guide](https://towardsdatascience.com/practical-guide-to-entity-resolution-part-1-f7893402ea7e)
@@ -78,20 +77,25 @@ we removed that information when present in the name column.
 For this step we decided to go the with the column tokenization of the 
 `title, brand, cpu_brand, cpu_model, cpu_type, cpu_frequency, ram_capacity` columns, followed by a 'StopWordsRemover' transformation. After that, we computed a TF-IDF matrix merging all tokens into a single vocabulary (using 'PySpark' 'CountVectorizer' and 'IDF' models)and we fed that to an LDA model for identifying topics (we decided to fix the number of topics to the number of different computer brands in the df). For each topic, we then extracted the top 3 tokens representing that token and we merged these 'hashtags' into a keywords list. For each tuple, we then extracted looked for 3 tokens in the keywords list. The blocking key was the resulting list.
 This approach performed quite well, since we drammatically reduced the space of tuples where to perform the blocking without missing many matching pairs (i.e in X2 dataframe we missed only 1.6% of matching pairs).
-For feature extraction, we decided to use the TF-IDF matrix computed for each column plus the encoding of the 'name' using the Universal Sentence Encoder model available on TensorFlow_Hub. 
+For feature extraction, we decided to use the TF-IDF matrix computed for each column plus the encoding of the 'title' using the Universal Sentence Encoder model available on TensorFlow_Hub. 
 
 ### Specific Approach for the X4 datasets
 Given the simplicity of the dataset as compared with `X2 and X3` and the fact that the name column
 contained entries written in a different language we performed the blocking on tokenization of the 
 `brand` and `size` column. This simple approach was very effective and led to no missed pairs.
 
+For feature extraction, we once again used the TF-IDF matrix plus the encoding of the 'name'. This time, in order to tackle the multilinguism, we used the Multilingual Encoder of Tensorflow_Hub.
+
 ## Match Scoring
-Here is where my journey ends as I have very limited ML experience :(
+We then generated the pairs by combining the tuples in each block (i.e groupBy('blocking_key')). After we generated the pairs, we performed a join with the dataframe containing now all the features. We thus ended up with a df with the following schema: <left_id, right_id, [left_features], [right_features]>
+We thus computed several distance metrics for each left and right features, and we transformed the dataset accordingly (for example, we computed the dot product between left and right title encodings, the levenshtein distance for string fields, the token overlap for tokenized columns and the scalar difference for numeric columns). We thus ended up with a bunch of numeric features and we thus dropped the fields we had before.
+Finally, in order to achieve better classification results, we performed a simple feature augmentation using polynomial (degree = 2) and exponential expansion.
+We repeated the same process for the provided labelled pairs.
 
-
-
-
-
+## Classification task using SVM
+For the classification task, we used a Support Vector Machine Model available in Pyspark.ml library. The classification task was hard to tackle due to a huge umbalance between the non matching pairs and the matching pairs. We adopted the following steps to try tackling this problem:
+1. Added weights to the classes (w = 1 / df.filter('label == 0/1').count() )
+2. 
 ## How to COMMIT after working on the NOTEBOOK
 GIT has some issues with jupyter when it comes to cell ouputs.
 Before commiting your code do the following:
