@@ -94,8 +94,10 @@ We repeated the same process for the provided labelled pairs.
 
 ## Classification task using SVM
 For the classification task, we used a Support Vector Machine Model available in Pyspark.ml library. The classification task was hard to tackle due to a huge umbalance between the non matching pairs and the matching pairs. We adopted the following steps to try tackling this problem:
-1. Added weights to the classes (w = 1 / df.filter('label == 0/1').count() )
-2. 
+1. Added weights to the classes (w = 1 / df.filter('label == 0/1').count())
+2. Used stratified split in order to have the same ratio between labels in train and test set.
+3. Performed hyperparameter tuning with 4-fold cross validation on the decision threshold of the svm ( > 1).
+ 
 ## How to COMMIT after working on the NOTEBOOK
 GIT has some issues with jupyter when it comes to cell ouputs.
 Before commiting your code do the following:
