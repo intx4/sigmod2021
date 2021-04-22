@@ -20,6 +20,7 @@ model = {
 }
 
 for instance_file in instance_files:
+    dataset_name = path.splitext(path.basename(instance_file))[0]
     dataset = read_dataset(instance_file)
     df = dataset.df
     df = blocking_keys(df, dataset.blocking_columns)
@@ -39,4 +40,4 @@ for instance_file in instance_files:
         "left_instance_id", "right_instance_id"
     )
 
-    output.write.mode("overwrite").csv(dataset.name + ".output")
+    output.write.mode("overwrite").csv(dataset_name + ".output")
