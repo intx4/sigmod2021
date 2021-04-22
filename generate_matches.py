@@ -1,21 +1,23 @@
 import sys
 from os import path
 
-from pyspark.ml.classification import LinearSVCModel, GBTClassificationModel, LogisticRegressionModel
+from pyspark.ml.classification import (
+    LinearSVCModel,
+    GBTClassificationModel,
+    LogisticRegressionModel,
+)
 from pyspark.ml.linalg import Vectors, VectorUDT
 from datasets import *
 from blocking import *
 from similarity import with_encodings, compute_similarities
 from graphframes import GraphFrame
 
-instance_files = []
-instance_files.append(sys.argv[1])
-instance_files.append(sys.argv[2])
-instance_files.append(sys.argv[3])
+instance_files = sys.argv[1:]
 
-model = {}
-model["notebooks"] = GBTClassificationModel.load("model-notebooks")
-model["products"] = LinearSVCModel.load("model-products")
+model = {
+    "products": LinearSVCModel.load("model-products"),
+    "notebooks": GBTClassificationModel.load("model-notebooks"),
+}
 
 for instance_file in instance_files:
     dataset = read_dataset(instance_file)
@@ -34,7 +36,7 @@ for instance_file in instance_files:
     output = model[dataset.name].transform(df)
 
     output = output.filter(output.prediction == 1).select(
-    "left_instance_id", "right_instance_id"
+        "left_instance_id", "right_instance_id"
     )
-    
+
     output.write.mode("overwrite").csv(dataset.name + ".output")
