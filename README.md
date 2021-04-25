@@ -131,3 +131,18 @@ The weight vector we obtained was `w =
 The most weighted feature was the "title_tokens_tfidf" one.
 We would have expected a higher weight for the features related to "title_encoding", while instead their weight was quite low.
 It was quite unexpected to see a high weight also for the "hdd_capacity" feature, whose augmented feature ('exp(x)') is the second most weighted feature.
+For the product datasets, the features were:
+`           "name",
+            "name_tokens",
+            "name_tokens_tfidf",
+            "name_encoding",
+            "brand",
+            "brand_tokens",
+            "brand_tokens_tfidf",
+            "price",
+            "size",`
+ The weight vector we obtained:
+`[ 1.77538695  0.35490182  0.56183909  0.03115297  0.3713699   0.40684609 0.40684609  0.10292789  0.79313035  0.68824758
+-2.17364067  1.80791245 -0.48987373  0.3946829  -0.65296184  0.48055447 -0.95034847  1.34965594 -0.12117104
+ 0.40020543  0.01391267  0.40684609  0.01391267  0.40684609 -0.22578841  0.20818782  0.15055509  2.52889901]`
+ Here we see a much more uniform distribution in the weights of the feature. The most weighted feature is the quadratic expantion of the "size" feature.
