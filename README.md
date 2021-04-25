@@ -97,23 +97,37 @@ For the classification task, we used a Support Vector Machine Model available in
 1. Added weights to the classes (w = 1 / df.filter('label == 0/1').count())
 2. Used stratified split in order to have the same ratio between labels in train and test set.
 3. Performed hyperparameter tuning with 4-fold cross validation on the decision threshold of the svm ( > 1).
- 
-## How to COMMIT after working on the NOTEBOOK
-GIT has some issues with jupyter when it comes to cell ouputs.
-Before commiting your code do the following:
 
-### Pycharm
-Go to the **jupyter** icon at the bottom left of your screen and click on the URLs with
-your access token passed as a GET argument that should open the notebook in your browser
+## Post-Mortem analysis
+The result we obtained with the SVM model were good but not optimal (however, it has to be said that ML pipeline we used was very general, exception made, of course, for the data cleaning part. The model can hence be reused for any other Entity Resolution task). We have decided to investigate the results of our model by having a look at the weight vector of the model. We focused on the specific model used for the notebooks.
+The features of our data points were the following:
 
-### Then
-1. Open the notebook that you have edited 
-2. Click on **CELL**
-3. Click on **ALL OUTPUT**
-4. Click on **CLEAR**
-5. Repeat for all notebooks
+            "title",
+            "brand",
+            "cpu_brand",
+            "cpu_model",
+            "cpu_type",
+            "cpu_frequency",
+            "ram_capacity",
+            "hdd_capacity",
+            "weight",
+            "title_tokens",
+            "brand_tokens",
+            "cpu_type_tokens",
+            "ram_type_tokens",
+            "title_tokens_tfidf",
+            "brand_tokens_tfidf",
+            "cpu_type_tokens_tfidf",
+            "ram_type_tokens_tfidf",
+            "title_encoding",
+            "cpu_type_encoding",
+            "ram_type_encoding",
 
-You can now commit your code :)
-
-
-
+In addition to this, we added the feature 'overall_sim' (the average of the features), and, for each of the above features, we add the expantions 'exp(x)' and 'x^^2', for a total of 61 features.
+The weight vector we obtained was 'w = 
+[0.7126, 0.8041, 0.524, -5.5832, -0.4214, -4.1963, -0.3278, 1.9426, 0.3475, 2.9603, 0.0573, -0.5129, -0.0519, 10.2059, 0.0573, 0.3862, 0.4672, -0.3382, 0.267, 0.4576, 0.1041,
+-0.7921, -3.1105, -0.0668, 0.773, -0.3302, 0.5238, 0.1458, 6.6336, -0.2746, -0.8685, -0.0616, 4.0579, -0.0879, 0.4495, -0.1935, -1.6627, -0.2412, -0.1972, 0.0033, -1.4435,
+-0.0894, 0.0573, -0.1751, -0.0621, -0.0796, 0.2234, 0.0918, -5.2068, -0.0894, 0.0573, -0.0371, 1.1518, -0.0203, -0.1666, -0.4202, -0.0132, -0.1705, 0.9001,-0.0924, -0.0297]'
+The most weighted feature was the "title_tokens_tfidf" one.
+We would have expected a higher weight for the features related to "title_encoding", while instead their weight was quite low.
+It was quite unexpected to see a high weight also for the "hdd_capacity" feature, whose augmented feature ('exp(x)') is the second most weighted feature.
