@@ -123,11 +123,11 @@ The features of our data points were the following:
             "cpu_type_encoding",
             "ram_type_encoding",
 
-In addition to this, we added the feature 'overall_sim' (the average of the features), and, for each of the above features, we add the expantions 'exp(x)' and 'x^^2', for a total of 61 features.
-The weight vector we obtained was 'w = 
+In addition to this, we added the feature "overall_sim" (the average of the features), and, for each of the above features, we add the expantions `exp(x)` and `x**2`, for a total of 61 features.
+The weight vector we obtained was `w = 
 [0.7126, 0.8041, 0.524, -5.5832, -0.4214, -4.1963, -0.3278, 1.9426, 0.3475, 2.9603, 0.0573, -0.5129, -0.0519, 10.2059, 0.0573, 0.3862, 0.4672, -0.3382, 0.267, 0.4576, 0.1041,
 -0.7921, -3.1105, -0.0668, 0.773, -0.3302, 0.5238, 0.1458, 6.6336, -0.2746, -0.8685, -0.0616, 4.0579, -0.0879, 0.4495, -0.1935, -1.6627, -0.2412, -0.1972, 0.0033, -1.4435,
--0.0894, 0.0573, -0.1751, -0.0621, -0.0796, 0.2234, 0.0918, -5.2068, -0.0894, 0.0573, -0.0371, 1.1518, -0.0203, -0.1666, -0.4202, -0.0132, -0.1705, 0.9001,-0.0924, -0.0297]'
+-0.0894, 0.0573, -0.1751, -0.0621, -0.0796, 0.2234, 0.0918, -5.2068, -0.0894, 0.0573, -0.0371, 1.1518, -0.0203, -0.1666, -0.4202, -0.0132, -0.1705, 0.9001,-0.0924, -0.0297]`
 The most weighted feature was the "title_tokens_tfidf" one.
 We would have expected a higher weight for the features related to "title_encoding", while instead their weight was quite low.
 It was quite unexpected to see a high weight also for the "hdd_capacity" feature, whose augmented feature ('exp(x)') is the second most weighted feature.
