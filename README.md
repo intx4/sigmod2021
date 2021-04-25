@@ -101,7 +101,7 @@ For the classification task, we used a Support Vector Machine Model available in
 ## Post-Mortem analysis
 The result we obtained with the SVM model were good but not optimal (however, it has to be said that ML pipeline we used was very general, exception made, of course, for the data cleaning part. The model can hence be reused for any other Entity Resolution task). We have decided to investigate the results of our model by having a look at the weight vector of the model. We focused on the specific model used for the notebooks.
 The features of our data points were the following:
-
+`
             "title",
             "brand",
             "cpu_brand",
@@ -122,7 +122,7 @@ The features of our data points were the following:
             "title_encoding",
             "cpu_type_encoding",
             "ram_type_encoding",
-
+`
 In addition to this, we added the feature "overall_sim" (the average of the features), and, for each of the above features, we add the expantions `exp(x)` and `x**2`, for a total of 61 features.
 The weight vector we obtained was `w = 
 [0.7126, 0.8041, 0.524, -5.5832, -0.4214, -4.1963, -0.3278, 1.9426, 0.3475, 2.9603, 0.0573, -0.5129, -0.0519, 10.2059, 0.0573, 0.3862, 0.4672, -0.3382, 0.267, 0.4576, 0.1041,
